@@ -14,7 +14,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.text.SimpleDateFormat;
@@ -26,16 +25,6 @@ import java.util.Set;
 public class CmdHalloween implements CommandExecutor {
     private Halloween plugin;
     private String pluginName;
-
-    /*
-     * COMMANDS
-     * /h place <candyId>
-     * /h remove
-     * /h info [player] (staff pour argument [])
-     * /h stats (pourcetanges de bonbons trouvés, par serveur, par joueur, classement etc)
-     * /h placing classement général
-     * /h clearAll supprime tous les bonbons sur le serveur
-     */
 
     public CmdHalloween(Halloween plugin) {
         this.plugin = plugin;
@@ -73,8 +62,6 @@ public class CmdHalloween implements CommandExecutor {
         } else {
             if (action.equals("place")) {
                 place(player, args);
-            } else if (action.equals("stats")) {
-                stats(player, args);
             } else {
                 showHelp(player);
             }
@@ -93,22 +80,6 @@ public class CmdHalloween implements CommandExecutor {
             Candy.loadLocations();
 
             player.sendMessage(Halloween.PREFIX + "Les données ont été rechargées !");
-        });
-    }
-
-    private void stats(Player player, String[] args) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            boolean global = false;
-            if (args.length > 0 && args[0].equalsIgnoreCase("global")) {
-                global = true;
-            }
-
-            player.sendMessage(Halloween.PREFIX + "Statistiques de l'événement"
-                    + (global ? " pour le serveur§a " + Bukkit.getServerName() : "")
-                    + "§7 - Pourcentage bonbons trouvés par joueur §a"
-                    + "§7 - Pourcentage de joueurs ayant joué §a"
-                    + "§7 - Pourcentage de joueurs ayant tout trouvé §a"
-            );
         });
     }
 
@@ -235,9 +206,11 @@ public class CmdHalloween implements CommandExecutor {
         if (player.hasPermission(pluginName + ".placing"))
             cmds.add("§b/" + pluginName + " placing §7donne le classement");
         if (player.hasPermission(pluginName + ".info"))
-            cmds.add("§b/" + pluginName + " info [player] §7donne des infos sur l'événement");
-        if (player.hasPermission(pluginName + ".stats"))
-            cmds.add("§b/" + pluginName + " stats <serveur> §7donne des stats sur l'événement");
+            cmds.add("§b/" + pluginName + " info [player] §7avancées d'un joueur");
+        if (player.hasPermission(pluginName + ".clearall"))
+            cmds.add("§b/" + pluginName + " clearall §7supprime les bonbons du serveur");
+        if (player.hasPermission(pluginName + ".dbreload"))
+            cmds.add("§b/" + pluginName + " dbreload §7met à jour les données");
 
         if (cmds.isEmpty()) {
             player.sendMessage(Halloween.ERROR + "Tu n'as pas la permission.");

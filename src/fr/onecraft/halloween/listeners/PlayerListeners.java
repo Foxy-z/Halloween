@@ -63,11 +63,20 @@ public class PlayerListeners implements Listener {
                     user.setPlacement(placement);
                     user.setWinAt(System.currentTimeMillis());
                     player.sendMessage(Halloween.PREFIX + "Mais... Vous avez trouvé toutes les friandises, félicitations ! " +
-                            "Vous avez arrivé " + placement + (placement == 1 ? "er" : "ème") + " de l'événement !");
+                            "Vous avez arrivé §a" + placement + (placement == 1 ? "er" : "ème") + " §7de l'événement !");
                 });
             } else {
-                player.sendMessage(Halloween.PREFIX + "Il vous reste §a" + user.getLocalRemaining()
-                        + " §7friandises à trouver sur ce serveur et §a" + user.getGlobalRemaining()
+                int localRemaining = user.getLocalRemaining();
+                String localRemainingStr = localRemaining != 0
+                        ? "§a" + localRemaining + " §7friandises à trouver sur ce serveur"
+                        : "";
+
+                int globalRemaining = user.getGlobalRemaining();
+                player.sendMessage(Halloween.PREFIX + "Il vous reste "
+                        + localRemainingStr
+                        + (localRemaining > 0 ? " et " : "") + "§a"
+                        + globalRemaining
+                        + (localRemaining == 0 ? " §7friandise à trouver" : "")
                         + " §7sur le network !");
             }
         });
