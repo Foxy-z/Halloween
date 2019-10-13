@@ -14,6 +14,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.text.SimpleDateFormat;
@@ -22,7 +23,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-// TODO Ajouter /h dbreload
 public class CmdHalloween implements CommandExecutor {
     private Halloween plugin;
     private String pluginName;
@@ -33,8 +33,8 @@ public class CmdHalloween implements CommandExecutor {
      * /h remove
      * /h info [player] (staff pour argument [])
      * /h stats (pourcetanges de bonbons trouvés, par serveur, par joueur, classement etc)
-     * /h placing
-     * /h clearAll
+     * /h placing classement général
+     * /h clearAll supprime tous les bonbons sur le serveur
      */
 
     public CmdHalloween(Halloween plugin) {
@@ -66,10 +66,11 @@ public class CmdHalloween implements CommandExecutor {
             placing(player);
         } else if (action.equals("clearall")) {
             clearAll(player);
+        } else if (action.equals("dbreload")) {
+            dbreload(player);
         } else if (args.length < 2) {
             showHelp(player);
         } else {
-            String value = args[1].toLowerCase();
             if (action.equals("place")) {
                 place(player, args);
             } else if (action.equals("stats")) {
@@ -79,6 +80,20 @@ public class CmdHalloween implements CommandExecutor {
             }
         }
         return true;
+    }
+
+    private void clearAll(Player player) {
+        Candy.clearAll();
+        player.sendMessage(Halloween.PREFIX + "Toutes friandises de ce serveur ont été retirées !");
+    }
+
+    private void dbreload(Player player) {
+        Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
+            CandyItem.loadTextures();
+            Candy.loadLocations();
+
+            player.sendMessage(Halloween.PREFIX + "Les données ont été rechargées !");
+        });
     }
 
     private void stats(Player player, String[] args) {
@@ -123,14 +138,14 @@ public class CmdHalloween implements CommandExecutor {
         );
     }
 
-    private void clearAll(Player player) {
-        Candy.clearAll();
-        player.sendMessage(Halloween.PREFIX + "Toutes friandises de ce serveur ont été retirées !");
-    }
-
     private void placing(Player player) {
         Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
             List<User> winners = Database.getWinners(15);
+            if (winners == null || winners.size() == 0) {
+                player.sendMessage(Halloween.PREFIX + "Il n'y a aucun gagnant pour le moment...");
+                return;
+            }
+
             player.sendMessage(Halloween.PREFIX + "Classement des joueurs : ");
 
             String color = "§6";

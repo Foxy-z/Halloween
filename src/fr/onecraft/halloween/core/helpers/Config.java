@@ -31,15 +31,7 @@ public class Config {
         }
     }
 
-    public static Configuration get(JavaPlugin plugin, String filename) {
-        return get(plugin, "", filename);
-    }
-
-    public static Configuration get(JavaPlugin plugin, String folder, int filename) {
-        return get(plugin, folder, String.valueOf(filename));
-    }
-
-    public static boolean save(JavaPlugin plugin, Configuration config, String folder, String filename) {
+    public static void save(JavaPlugin plugin, Configuration config, String folder, String filename) {
         try {
             YamlConfiguration configuration = new YamlConfiguration();
             for (String key : config.getKeys(false)) configuration.set(key, config.get(key));
@@ -48,18 +40,8 @@ public class Config {
                     plugin.getDataFolder() + (folder.isEmpty() ? "" : "/") + folder,
                     filename + (filename.endsWith(".yml") ? "" : ".yml")
             ));
-            return true;
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
-    }
-
-    public static boolean save(JavaPlugin plugin, Configuration config, String filename) {
-        return save(plugin, config, "", filename);
-    }
-
-    public static boolean save(JavaPlugin plugin, Configuration config, String folder, int configName) {
-        return save(plugin, config, folder, String.valueOf(configName));
     }
 }

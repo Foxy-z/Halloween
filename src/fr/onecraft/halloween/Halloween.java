@@ -35,10 +35,11 @@ public class Halloween extends JavaPlugin {
         }
 
         // load candy textures, candy locations and users
-        CandyItem.loadTextures();
-        Candy.loadLocations();
-        Bukkit.getScheduler().runTaskAsynchronously(this,
-                () -> Bukkit.getOnlinePlayers().stream().map(Entity::getUniqueId).forEach(User::loadUser));
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            CandyItem.loadTextures();
+            Candy.loadLocations();
+            Bukkit.getOnlinePlayers().stream().map(Entity::getUniqueId).forEach(User::loadUser);
+        });
 
         // register events and commands
         new RegisterManager(this).register();
