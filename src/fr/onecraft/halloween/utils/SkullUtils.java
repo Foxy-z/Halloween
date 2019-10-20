@@ -2,14 +2,14 @@ package fr.onecraft.halloween.utils;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import net.minecraft.server.v1_8_R1.BlockPosition;
-import net.minecraft.server.v1_8_R1.TileEntitySkull;
+import net.minecraft.server.v1_8_R3.BlockPosition;
+import net.minecraft.server.v1_8_R3.TileEntitySkull;
 import org.bukkit.Material;
 import org.bukkit.SkullType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Skull;
-import org.bukkit.craftbukkit.v1_8_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
