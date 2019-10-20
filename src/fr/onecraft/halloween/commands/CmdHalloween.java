@@ -93,6 +93,15 @@ public class CmdHalloween implements CommandExecutor {
                 OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(args[1]);
 
                 User targetUser = User.fromUuid(targetPlayer.getUniqueId());
+                if (targetUser == null) {
+                    targetUser = Database.getUser(targetPlayer.getUniqueId());
+                }
+
+                if (targetUser == null) {
+                    player.sendMessage(Halloween.ERROR + "Ce joueur est introuvable...");
+                    return;
+                }
+
                 infoOf(player, targetUser);
             });
         }
@@ -101,7 +110,7 @@ public class CmdHalloween implements CommandExecutor {
     private void infoOf(Player player, User target) {
         String suffix = player.getUniqueId() != target.getUuid() ? " pour §a" + target.getName() + "§7 :" : "";
         int p = target.getPlacement();
-        String placement = p == -1 ? "non classé" : p == 1 ? "§61er" : p < 4 ? "§e" + p + "ème" : "§f" + p + "ème";
+        String placement = p < 1 ? "non classé" : p == 1 ? "§61er" : p < 4 ? "§e" + p + "ème" : "§f" + p + "ème";
 
         player.sendMessage(Halloween.PREFIX + "Information de l'événement Halloween" + suffix
                 + "\n§7 - Placement : " + placement
