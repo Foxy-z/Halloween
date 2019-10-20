@@ -11,6 +11,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
 public class Halloween extends JavaPlugin {
     public static Halloween INSTANCE;
 
@@ -55,6 +63,24 @@ public class Halloween extends JavaPlugin {
         DatabaseManager.closeDataBaseConnection();
 
         info("Plugin has been disabled !");
+    }
+
+    public void logToFile(String action, String message) {
+        try {
+            Date now = Calendar.getInstance().getTime();
+            String today = new SimpleDateFormat("yyyy-MM-dd").format(now);
+            String time = new SimpleDateFormat("HH:mm:ss").format(now);
+
+            File file = new File(this.getDataFolder() + "/logs/", today + ".txt");
+            if (!file.exists()) file.getParentFile().mkdirs();
+
+            PrintWriter writer = new PrintWriter(new FileWriter(file, true));
+            writer.println("[" + time + "][" + action + "] " + message);
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void info(String message) {

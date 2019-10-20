@@ -70,7 +70,7 @@ public class CmdHalloween implements CommandExecutor {
     }
 
     private void clearAll(Player player) {
-        Candy.clearAll();
+        Candy.clearAll(plugin, player);
         player.sendMessage(Halloween.PREFIX + "Toutes friandises de ce serveur ont été retirées !");
     }
 
@@ -173,7 +173,7 @@ public class CmdHalloween implements CommandExecutor {
         SkullUtils.applyTextureToBlock(player, candy.getTexture(), target);
 
         target.setData((byte) 1, true);
-        Candy.add(target.getLocation(), candy);
+        Candy.add(plugin, player, target.getLocation(), candy);
 
         player.sendMessage(Halloween.PREFIX + "La friandise a été placée !");
     }
@@ -187,7 +187,7 @@ public class CmdHalloween implements CommandExecutor {
         }
 
         // remove candy if there is one
-        if (!Candy.remove(target.getLocation())) {
+        if (!Candy.remove(plugin, player, target.getLocation())) {
             player.sendMessage(Halloween.ERROR + "Il n'y a pas de bonbon ici...");
             return;
         }

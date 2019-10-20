@@ -5,6 +5,7 @@ import fr.onecraft.halloween.core.helpers.Database;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.meta.FireworkMeta;
 
 import java.util.Collection;
@@ -24,6 +25,40 @@ public class Candy {
         this.item = item;
         this.serverName = serverName;
         this.location = location;
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public CandyItem getItem() {
+        return this.item;
+    }
+
+    public String getServerName() {
+        return this.serverName;
+    }
+
+    public void spawnAnimation() {
+        Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
+        FireworkMeta fwm = fw.getFireworkMeta();
+        fwm.setPower(20);
+        fwm.addEffect(
+                FireworkEffect.builder()
+                        .withColor(Color.WHITE)
+                        .withFlicker()
+                        .withTrail()
+                        .withFade(Color.ORANGE)
+                        .withFade(Color.BLACK)
+                        .build()
+        );
+
+        fw.setFireworkMeta(fwm);
+        fw.detonate();
     }
 
     public static Candy fromId(int candyId) {
@@ -50,12 +85,8 @@ public class Candy {
         return LOCATIONS.values();
     }
 
-    public String getServerName() {
-        return this.serverName;
-    }
-
-    public static void add(Location location, CandyItem type) {
-        Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
+    public static void add(Halloween plugin, Player player, Location location, CandyItem type) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             int id = Database.addCandyLocation(location, type.getId());
             if (id == -1) return;
             Candy candy = new Candy(
@@ -66,10 +97,18 @@ public class Candy {
             );
 
             LOCATIONS.put(id, candy);
+
+            plugin.logToFile("PLACE", "Type " + type.getId() + " head placed by "
+                    + player.getName() + " (" + player.getUniqueId() + ") at "
+                    + "world: " + location.getWorld().getName()
+                    + "x: " + location.getX()
+                    + "y: " + location.getY()
+                    + "z: " + location.getZ()
+            );
         });
     }
 
-    public static boolean remove(Location location) {
+    public static boolean remove(Halloween plugin, Player player, Location location) {
         for (Candy candy : LOCATIONS.values()) {
             // skip if candy is on different server
             if (!candy.getServerName().equals(Bukkit.getServerName())) continue;
@@ -79,7 +118,14 @@ public class Candy {
                     && cLoc.getBlockY() == location.getBlockY()
                     && cLoc.getBlockZ() == location.getBlockZ()) {
                 LOCATIONS.remove(candy.getId());
-                Database.removeCandyLocation(candy.getId());
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> Database.removeCandyLocation(candy.getId()));
+                plugin.logToFile("REMOVE", "Type " + candy.getItem().getId() + " head (id: " + candy.getId() + ") removed from "
+                        + "world: " + location.getWorld().getName()
+                        + "x: " + location.getX()
+                        + "y: " + location.getY()
+                        + "z: " + location.getZ()
+                        + " by " + player.getName() + " (" + player.getUniqueId() + ")"
+                );
                 return true;
             }
         }
@@ -87,38 +133,12 @@ public class Candy {
         return false;
     }
 
-    public Location getLocation() {
-        return location;
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
-    public void spawnAnimation() {
-        Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
-        FireworkMeta fwm = fw.getFireworkMeta();
-        fwm.setPower(20);
-        fwm.addEffect(
-                FireworkEffect.builder()
-                        .withColor(Color.WHITE)
-                        .withFlicker()
-                        .withTrail()
-                        .withFade(Color.ORANGE)
-                        .withFade(Color.BLACK)
-                        .build()
-        );
-
-        fw.setFireworkMeta(fwm);
-        fw.detonate();
-    }
-
     public static void loadLocations() {
         LOCATIONS.clear();
         LOCATIONS.putAll(Database.getLocations());
     }
 
-    public static void clearAll() {
+    public static void clearAll(Halloween plugin, Player player) {
         // remove each block
         for (Candy candy : LOCATIONS.values()) {
             // skip if candy is on different server
@@ -128,6 +148,9 @@ public class Candy {
         }
 
         LOCATIONS.clear();
-        Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> Database.removeAll(Bukkit.getServerName()));
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> Database.removeAll(Bukkit.getServerName()));
+
+        plugin.logToFile("REMOVE_ALL", player.getName() + " (" + player.getUniqueId() + ") " +
+                "has removed every heads from this server.");
     }
 }
