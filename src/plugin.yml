@@ -1,6 +1,6 @@
 name: Halloween
 author: TheFoxy41
-version: 0.0.3
+version: 0.1.0
 main: fr.onecraft.halloween.Halloween
 commands:
   halloween:
