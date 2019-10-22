@@ -1,5 +1,6 @@
 package fr.onecraft.halloween.core.database.objects;
 
+import fr.onecraft.halloween.core.database.enums.SQLCondition;
 import fr.onecraft.halloween.core.database.enums.SQLJoin;
 import fr.onecraft.halloween.core.database.enums.SQLOrder;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseConnectionException;
@@ -14,22 +15,8 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Query {
-    private int paramIndex;
-    private String table;
-    private String select;
-    private String order;
-    private String limit;
-
-    private boolean insertOrUpdate = false;
-    private boolean updatable = false;
-
+public class Query extends BaseQuery {
     private final Connection connection;
-
-    private final List<String> where = new ArrayList<>();
-    private final List<String> join = new ArrayList<>();
-    private final Map<String, String> insert = new LinkedHashMap<>();
-    private final Map<String, String> args = new HashMap<>();
 
     public Query(Connection connection) throws DatabaseConnectionException {
         try {
@@ -44,10 +31,14 @@ public class Query {
         this.paramIndex = 0;
     }
 
+    /* FROM */
+
     public Query from(String table) {
         this.table = checkSafe(table);
         return this;
     }
+
+    /* SELECT */
 
     public Query select() {
         this.select = "SELECT * FROM";
@@ -59,6 +50,8 @@ public class Query {
         this.select = "SELECT " + StringUtils.join(", ", Arrays.asList(items)) + " FROM";
         return this;
     }
+
+    /* INSERT */
 
     public Query insert(String item, int value) {
         return insert(item, String.valueOf(value));
@@ -78,20 +71,71 @@ public class Query {
         return this;
     }
 
+    /* WHERE */
+
     public Query where(String key, int value) {
-        return where(key, String.valueOf(value));
+        return where(SQLCondition.EQUALS, key, String.valueOf(value));
     }
 
     public Query where(String key, String value) {
-        this.where.add(checkSafe(key) + " = " + bindParam(value));
+        return where(SQLCondition.EQUALS, key, value);
+    }
+
+    public Query where(String key, SubQuery subQuery) throws DatabaseQueryException {
+        return where(SQLCondition.EQUALS, key, subQuery);
+    }
+
+    public Query where(SQLCondition condition, String key, int value) {
+        return where(condition, key, String.valueOf(value));
+    }
+
+    public Query where(SQLCondition condition, String key, String value) {
+        this.where.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
         return this;
     }
+
+    public Query where(SQLCondition condition, String key, SubQuery subQuery) throws DatabaseQueryException {
+        this.where.add(checkSafe(key) + " " + condition.getOperator() + " (" + subQuery.build() + ")");
+        return this;
+    }
+
+    /* HAVING */
+
+    public Query having(String key, int value) {
+        return having(SQLCondition.EQUALS, key, String.valueOf(value));
+    }
+
+    public Query having(String key, String value) {
+        return having(SQLCondition.EQUALS, key, value);
+    }
+
+    public Query having(String key, SubQuery subQuery) throws DatabaseQueryException {
+        return having(SQLCondition.EQUALS, key, subQuery);
+    }
+
+    public Query having(SQLCondition condition, String key, int value) {
+        return having(condition, key, String.valueOf(value));
+    }
+
+    public Query having(SQLCondition condition, String key, String value) {
+        this.having.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
+        return this;
+    }
+
+    public Query having(SQLCondition condition, String key, SubQuery subQuery) throws DatabaseQueryException {
+        this.having.add(checkSafe(key) + " " + condition.getOperator() + " (" + subQuery.build() + ")");
+        return this;
+    }
+
+    /* ORDER */
 
     public Query order(SQLOrder order, String... tables) {
         Arrays.stream(tables).forEach(this::checkSafe);
         this.order = "ORDER BY " + StringUtils.join(", ", Arrays.asList(tables)) + " " + order.name();
         return this;
     }
+
+    /* LIMIT */
 
     public Query limit(int limit) {
         if (limit < 0) throw new InvalidParameterException("Limit must be a positive number");
@@ -107,6 +151,15 @@ public class Query {
         return this;
     }
 
+    /* GROUP */
+
+    public Query group(String column) {
+        this.group = "GROUP by " + checkSafe(column);
+        return this;
+    }
+
+    /* JOIN */
+
     public Query join(String table, String firstKey, String secondKey) {
         return join(SQLJoin.LEFT, table, firstKey, secondKey);
     }
@@ -118,89 +171,23 @@ public class Query {
         return this;
     }
 
+    /* UPDATABLE */
+
     public Query updatable() {
         this.updatable = true;
         return this;
     }
 
-    private String bindParam(String param) {
+    /* UTILS */
+
+    protected String bindParam(String param) {
         String key = ":param" + paramIndex;
         args.put(key, param);
         paramIndex++;
         return key;
     }
 
-    private String checkSafe(String param) {
-        if (!param.matches("[a-zA-Z_]+")) {
-            throw new InvalidParameterException("Parameter key must match [a-zA-Z_]");
-        }
-
-        return param;
-    }
-
-    private String makeQuery() throws DatabaseQueryException {
-        List<String> parts = new ArrayList<>();
-
-        // if query is select
-        if (this.select != null) {
-            // bind select
-            parts.add(this.select);
-
-            // bind table
-            parts.add(this.table);
-
-            // bind join
-            if (!this.join.isEmpty()) {
-                parts.addAll(this.join);
-            }
-
-            // bind where
-            if (!this.where.isEmpty()) {
-                parts.add("WHERE");
-                parts.add("(" + StringUtils.join(") AND (", this.where) + ")");
-            }
-
-            // bind order
-            if (this.order != null) {
-                parts.add(this.order);
-            }
-
-            // bind limit
-            if (this.limit != null) {
-                parts.add(this.limit);
-            }
-            // if query is insert
-        } else if (!this.insert.isEmpty()) {
-            // bind insert
-            parts.add("INSERT INTO");
-            parts.add(this.table);
-
-            // bind columns
-            parts.add("(");
-            parts.add(StringUtils.join(", ", new ArrayList<>(this.insert.keySet())));
-            parts.add(")");
-
-            // bind values
-            List<String> insertValues = this.insert.keySet().stream()
-                    .map(this.insert::get)
-                    .collect(Collectors.toList());
-
-            parts.add("VALUES");
-            parts.add("(");
-            parts.add(StringUtils.join(", ", insertValues));
-            parts.add(")");
-
-            // bind duplicate keys case (if insertOrUpdate)
-            if (this.insertOrUpdate) {
-                parts.add("ON DUPLICATE KEY UPDATE");
-                parts.add(StringUtils.join(", ", " = ", insert));
-            }
-        } else {
-            throw new DatabaseQueryException("You must use insert, select or delete into your query");
-        }
-
-        return StringUtils.join(" ", parts);
-    }
+    /* EXECUTE */
 
     public ResultSet execute() throws SQLException, DatabaseQueryException {
         String query = makeQuery();
