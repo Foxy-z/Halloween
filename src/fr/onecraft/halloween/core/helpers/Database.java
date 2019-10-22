@@ -280,7 +280,7 @@ public class Database {
         try {
             Query query = new Query(DatabaseManager.getConnection());
             query = query.from(FOUND)
-                    .select(FOUND + ".user_id", "uuid", "count(*)")
+                    .select("user_id", "uuid", "count(*)")
                     .group("user_id")
                     .having(
                             SQLCondition.NON_EQUALS,
