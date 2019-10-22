@@ -52,7 +52,7 @@ public class CmdHalloween implements CommandExecutor {
         } else if (action.equals("remove")) {
             remove(player);
         } else if (action.equals("placing")) {
-            placing(player);
+            placing(player, args);
         } else if (action.equals("clearall")) {
             clearAll(player);
         } else if (action.equals("dbreload")) {
@@ -118,10 +118,18 @@ public class CmdHalloween implements CommandExecutor {
         );
     }
 
-    private void placing(Player player) {
+    // TODO ajouter classement temporaire (joueur la plus avancé, avec x bonbons)
+    // /halloween placing <amount> [type : winners / progress]
+    private void placing(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
-            List<User> winners = Database.getWinners(15);
-            if (winners == null || winners.size() == 0) {
+            List<User> users = null;
+            if (args[1].equalsIgnoreCase("winners")) {
+                users = Database.getWinners(10);
+            } else if (args[1].equalsIgnoreCase("progress")) {
+                users = Database.getProgressRanking(10);
+            }
+
+            if (users == null || users.size() == 0) {
                 player.sendMessage(Halloween.PREFIX + "Il n'y a aucun gagnant pour le moment...");
                 return;
             }
@@ -129,8 +137,8 @@ public class CmdHalloween implements CommandExecutor {
             player.sendMessage(Halloween.PREFIX + "Classement des joueurs : ");
 
             String color = "§6";
-            for (int i = 0; i < winners.size(); i++) {
-                User user = winners.get(i);
+            for (int i = 0; i < users.size(); i++) {
+                User user = users.get(i);
                 String time = new SimpleDateFormat("MM/dd à HH:mm")
                         .format(new Date(user.getWinAt()));
 
@@ -143,6 +151,26 @@ public class CmdHalloween implements CommandExecutor {
                     color = "§f";
                 }
             }
+        });
+    }
+
+    /*
+     * /ha stats
+     * -
+     * /ha stats [server]
+     */
+    private void stats(Player player, String[] args) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            player.sendMessage(Halloween.PREFIX + "Statistiques de l'événement : "
+                    + "\n §7- Nombre de bonbons à trouver : §a"
+                    + "\n §7- Nombre de joueurs uniques : §a"
+                    + "\n §7- Nombre de participants : §a"
+                    + "\n §7- Nombre de bonbons trouvés : §a"
+                    + "\n §7- Pourcentage moyen de bonbons trouvés par participant : §a"
+                    + "\n §7- Pourcentage de participants ayant tout trouvé : §a"
+                    + "\n §7- Temps moyen pour tout trouver : §a"
+
+            );
         });
     }
 

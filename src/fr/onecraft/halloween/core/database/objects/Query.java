@@ -6,14 +6,16 @@ import fr.onecraft.halloween.core.database.enums.SQLOrder;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseConnectionException;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseQueryException;
 import fr.onecraft.halloween.utils.StringUtils;
+import org.bukkit.Bukkit;
 
 import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Query extends BaseQuery {
     private final Connection connection;
@@ -191,6 +193,7 @@ public class Query extends BaseQuery {
 
     public ResultSet execute() throws SQLException, DatabaseQueryException {
         String query = makeQuery();
+        Bukkit.getConsoleSender().sendMessage(query);
 
         // execute query
         NamedParamStatement statement = null;
@@ -218,6 +221,7 @@ public class Query extends BaseQuery {
             statement.execute();
             return null;
         } catch (SQLException e) {
+            Bukkit.getConsoleSender().sendMessage(query);
             throw e;
         } finally {
             try {

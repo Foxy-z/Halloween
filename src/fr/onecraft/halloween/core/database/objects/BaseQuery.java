@@ -25,8 +25,8 @@ abstract class BaseQuery {
     final Map<String, String> args = new HashMap<>();
 
     String checkSafe(String param) {
-        if (!param.matches("[a-zA-Z_]+")) {
-            throw new InvalidParameterException("Parameter key must match [a-zA-Z_]");
+        if (!param.matches("[a-zA-Z_.]+") && !param.matches("count\\([a-zA-Z*_]+\\)")) {
+            throw new InvalidParameterException("Parameter key must match [a-zA-Z*_]: '" + param + "' given");
         }
 
         return param;
@@ -57,6 +57,12 @@ abstract class BaseQuery {
             // bind group
             if (this.group != null) {
                 parts.add(this.group);
+            }
+
+            // bind having
+            if (!this.having.isEmpty()) {
+                parts.add("HAVING");
+                parts.add("(" + StringUtils.join(") AND (", this.having) + ")");
             }
 
             // bind order
