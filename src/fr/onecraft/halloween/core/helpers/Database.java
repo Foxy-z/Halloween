@@ -24,7 +24,6 @@ public class Database {
     private final static String CANDIES = "halloween_candies";
     private final static String WINNERS = "halloween_winners";
 
-
     /**
      * Get a user data
      *
@@ -101,7 +100,6 @@ public class Database {
                         )
                 );
             }
-
         } catch (DatabaseConnectionException | SQLException | DatabaseQueryException e) {
             e.printStackTrace();
         }
@@ -251,7 +249,7 @@ public class Database {
                     .limit(amount)
                     .execute();
 
-            // rif there is no winner
+            // if there is no winner
             if (!resultSet.next()) {
                 return null;
             }
@@ -280,15 +278,19 @@ public class Database {
 
     public static List<User> getProgressRanking(int amount) {
         try {
-             Query query = new Query(DatabaseManager.getConnection());
-             query = query.from(FOUND)
-                    .select("user_id", "count(id)")
+            Query query = new Query(DatabaseManager.getConnection());
+            query = query.from(FOUND)
+                    .select(FOUND + ".user_id", "uuid", "count(*)")
                     .group("user_id")
-                    .having(SQLCondition.NON_EQUALS, "count(id)", new SubQuery(query)
-                            .from(LOCATIONS)
-                            .select("count(id)")
+                    .having(
+                            SQLCondition.NON_EQUALS,
+                            "count(*)",
+                            new SubQuery(query)
+                                    .from(LOCATIONS)
+                                    .select("count(*)")
                     )
-                    .order(SQLOrder.DESC, "count(id)")
+                    .join(USERS, "user_id", "id")
+                    .order(SQLOrder.DESC, "count(*)")
                     .limit(amount);
 
             ResultSet resultSet = query.execute();
@@ -300,17 +302,10 @@ public class Database {
 
             resultSet.previous();
             List<User> users = new ArrayList<>();
-            Set<Integer> candies = getLocations().keySet();
 
             // add each winner
             while (resultSet.next()) {
-                users.add(new User(
-                        resultSet.getInt("user_id"),
-                        UUID.fromString(resultSet.getString("uuid")),
-                        resultSet.getInt(WINNERS + ".id"),
-                        resultSet.getLong(WINNERS + ".won_at"),
-                        candies
-                ));
+                users.add(getUser(UUID.fromString(resultSet.getString("uuid"))));
             }
             return users;
         } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {

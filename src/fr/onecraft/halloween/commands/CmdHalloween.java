@@ -84,7 +84,6 @@ public class CmdHalloween implements CommandExecutor {
     }
 
     private void info(Player player, String[] args) {
-        // TODO tester le .info.other
         if (args.length == 1 || !player.hasPermission(pluginName + ".info.other")) {
             User target = User.fromUuid(player.getUniqueId());
             infoOf(player, target);
@@ -122,27 +121,60 @@ public class CmdHalloween implements CommandExecutor {
     // /halloween placing <amount> [type : winners / progress]
     private void placing(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
-            List<User> users = null;
-            if (args[1].equalsIgnoreCase("winners")) {
-                users = Database.getWinners(10);
-            } else if (args[1].equalsIgnoreCase("progress")) {
-                users = Database.getProgressRanking(10);
+            boolean progress = false;
+            if (args.length > 1 && args[1].equalsIgnoreCase("progress")) {
+                progress = true;
             }
 
+            int amount = 10;
+            if (args.length > 2) {
+                try {
+                    amount = Integer.parseInt(args[2]);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(Halloween.ERROR + "Veuillez saisir un nombre valide.");
+                    return;
+                }
+
+                if (amount < 0 || amount > 100) {
+                    player.sendMessage(Halloween.ERROR + "Veuillez saisir un nombre valide (inférieur à 100).");
+                    return;
+                }
+            }
+            List<User> users;
+            if (progress) {
+                users = Database.getProgressRanking(amount);
+            } else {
+                users = Database.getWinners(amount);
+            }
+
+            // check if user list is empty
             if (users == null || users.size() == 0) {
-                player.sendMessage(Halloween.PREFIX + "Il n'y a aucun gagnant pour le moment...");
+                player.sendMessage(Halloween.PREFIX + "Il n'y a aucun " + (progress ? "participant" : "gagnant") + " pour le moment...");
                 return;
             }
 
-            player.sendMessage(Halloween.PREFIX + "Classement des joueurs : ");
-
             String color = "§6";
+            StringBuilder message = new StringBuilder(Halloween.PREFIX + (progress ? "Avancée" : "Classement") + " des joueurs : ");
             for (int i = 0; i < users.size(); i++) {
                 User user = users.get(i);
-                String time = new SimpleDateFormat("MM/dd à HH:mm")
-                        .format(new Date(user.getWinAt()));
+                // add player name
+                message.append("\n")
+                        .append("§7 - ")
+                        .append(color)
+                        .append(user.getName())
+                        .append("§7, ");
 
-                player.sendMessage("§7 - " + color + user.getName() + "§7, le " + time);
+                // add stat
+                if (progress) {
+                    message.append("avec §e")
+                            .append(user.getFoundCandies().size())
+                            .append("§7 bonbons");
+                } else {
+                    String time = new SimpleDateFormat("MM/dd à HH:mm")
+                            .format(new Date(user.getWinAt()));
+
+                    message.append("le ").append(time);
+                }
 
                 // switch colors
                 if (i == 0) {
@@ -151,6 +183,8 @@ public class CmdHalloween implements CommandExecutor {
                     color = "§f";
                 }
             }
+
+            player.sendMessage(message.toString());
         });
     }
 
