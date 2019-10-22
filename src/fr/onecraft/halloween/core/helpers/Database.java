@@ -1,9 +1,12 @@
 package fr.onecraft.halloween.core.helpers;
 
 import fr.onecraft.halloween.core.database.DatabaseManager;
+import fr.onecraft.halloween.core.database.enums.SQLCondition;
+import fr.onecraft.halloween.core.database.enums.SQLOrder;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseConnectionException;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseQueryException;
 import fr.onecraft.halloween.core.database.objects.Query;
+import fr.onecraft.halloween.core.database.objects.SubQuery;
 import fr.onecraft.halloween.core.objects.Candy;
 import fr.onecraft.halloween.core.objects.CandyItem;
 import fr.onecraft.halloween.core.objects.User;
@@ -249,6 +252,48 @@ public class Database {
                     .execute();
 
             // rif there is no winner
+            if (!resultSet.next()) {
+                return null;
+            }
+
+            resultSet.previous();
+            List<User> users = new ArrayList<>();
+            Set<Integer> candies = getLocations().keySet();
+
+            // add each winner
+            while (resultSet.next()) {
+                users.add(new User(
+                        resultSet.getInt("user_id"),
+                        UUID.fromString(resultSet.getString("uuid")),
+                        resultSet.getInt(WINNERS + ".id"),
+                        resultSet.getLong(WINNERS + ".won_at"),
+                        candies
+                ));
+            }
+            return users;
+        } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public static List<User> getProgressRanking(int amount) {
+        try {
+             Query query = new Query(DatabaseManager.getConnection());
+             query = query.from(FOUND)
+                    .select("user_id", "count(id)")
+                    .group("user_id")
+                    .having(SQLCondition.NON_EQUALS, "count(id)", new SubQuery(query)
+                            .from(LOCATIONS)
+                            .select("count(id)")
+                    )
+                    .order(SQLOrder.DESC, "count(id)")
+                    .limit(amount);
+
+            ResultSet resultSet = query.execute();
+
+            // if there is no player
             if (!resultSet.next()) {
                 return null;
             }
