@@ -4,6 +4,7 @@ import fr.onecraft.halloween.Halloween;
 import fr.onecraft.halloween.core.helpers.Database;
 import fr.onecraft.halloween.core.objects.Candy;
 import fr.onecraft.halloween.core.objects.CandyItem;
+import fr.onecraft.halloween.core.objects.LeaderboardUser;
 import fr.onecraft.halloween.core.objects.PlayerUser;
 import fr.onecraft.halloween.utils.SkullUtils;
 import org.bukkit.Bukkit;
@@ -140,7 +141,7 @@ public class CmdHalloween implements CommandExecutor {
                     return;
                 }
             }
-            List<PlayerUser> users;
+            List<LeaderboardUser> users;
             if (progress) {
                 users = Database.getProgressRanking(amount);
             } else {
@@ -156,7 +157,7 @@ public class CmdHalloween implements CommandExecutor {
             String color = "§6";
             StringBuilder message = new StringBuilder(Halloween.PREFIX + (progress ? "Avancée" : "Classement") + " des joueurs : ");
             for (int i = 0; i < users.size(); i++) {
-                PlayerUser user = users.get(i);
+                LeaderboardUser user = users.get(i);
                 // add player name
                 message.append("\n")
                         .append("§7 - ")
@@ -167,7 +168,7 @@ public class CmdHalloween implements CommandExecutor {
                 // add stat
                 if (progress) {
                     message.append("avec §e")
-                            .append(user.getFoundCandies().size())
+                            .append(user.getFoundCount())
                             .append("§7 bonbons");
                 } else {
                     String time = new SimpleDateFormat("MM/dd à HH:mm")

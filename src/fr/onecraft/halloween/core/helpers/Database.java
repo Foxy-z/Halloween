@@ -334,7 +334,7 @@ public class Database {
                     .having(
                             SQLCondition.NON_EQUALS,
                             "count(*)",
-                            new SubQuery(query) // TODO indépendant de query
+                            new SubQuery()
                                     .from(LOCATIONS)
                                     .select("count(*)")
                     )

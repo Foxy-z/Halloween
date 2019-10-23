@@ -29,6 +29,7 @@ public class PlayerUser extends LeaderboardUser {
 
     public void found(int candy) {
         foundCandies.add(candy);
+        this.foundCount++;
     }
 
     public boolean hasFoundAll() {

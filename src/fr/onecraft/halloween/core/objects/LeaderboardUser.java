@@ -6,7 +6,7 @@ public class LeaderboardUser {
     private int id;
     private String name;
     private UUID uuid;
-    private int foundCount;
+    int foundCount;
     private int placement;
     private long wonAt;
 
