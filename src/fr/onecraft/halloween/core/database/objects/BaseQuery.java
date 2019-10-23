@@ -1,5 +1,8 @@
 package fr.onecraft.halloween.core.database.objects;
 
+import fr.onecraft.halloween.core.database.enums.SQLCondition;
+import fr.onecraft.halloween.core.database.enums.SQLJoin;
+import fr.onecraft.halloween.core.database.enums.SQLOrder;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseQueryException;
 import fr.onecraft.halloween.utils.StringUtils;
 
@@ -25,6 +28,13 @@ abstract class BaseQuery<T extends BaseQuery> {
     final Map<String, String> insert = new LinkedHashMap<>();
     final Map<String, String> args = new HashMap<>();
 
+    /* FROM */
+
+    public T from(String table) {
+        this.table = checkSafe(table);
+        return (T) this;
+    }
+
     /* SELECT */
 
     public T select() {
@@ -35,6 +45,88 @@ abstract class BaseQuery<T extends BaseQuery> {
     public T select(String... items) {
         Arrays.stream(items).forEach(this::checkSafe);
         this.select = "SELECT " + StringUtils.join(", ", Arrays.asList(items)) + " FROM";
+        return (T) this;
+    }
+
+    /* WHERE */
+
+    public T where(String key, int value) {
+        return where(SQLCondition.EQUALS, key, String.valueOf(value));
+    }
+
+    public T where(String key, String value) {
+        return where(SQLCondition.EQUALS, key, value);
+    }
+
+    public T where(SQLCondition condition, String key, int value) {
+        return where(condition, key, String.valueOf(value));
+    }
+
+    public T where(SQLCondition condition, String key, String value) {
+        this.where.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
+        return (T) this;
+    }
+
+    /* HAVING */
+
+    public T having(String key, int value) {
+        return having(SQLCondition.EQUALS, key, String.valueOf(value));
+    }
+
+    public T having(String key, String value) {
+        return having(SQLCondition.EQUALS, key, value);
+    }
+
+    public T having(SQLCondition condition, String key, int value) {
+        return having(condition, key, String.valueOf(value));
+    }
+
+    public T having(SQLCondition condition, String key, String value) {
+        this.having.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
+        return (T) this;
+    }
+
+    /* ORDER */
+
+    public T order(SQLOrder order, String... tables) {
+        Arrays.stream(tables).forEach(this::checkSafe);
+        this.order = "ORDER BY " + StringUtils.join(", ", Arrays.asList(tables)) + " " + order.name();
+        return (T) this;
+    }
+
+    /* LIMIT */
+
+    public T limit(int limit) {
+        if (limit < 0) throw new InvalidParameterException("Limit must be a positive number");
+
+        this.limit = "LIMIT " + limit;
+        return (T) this;
+    }
+
+    public T limit(int limit, int offset) {
+        if (limit < 0 || offset < 0) throw new InvalidParameterException("Limit and offset must be positive numbers");
+
+        this.limit = "LIMIT " + offset + ", " + limit;
+        return (T) this;
+    }
+
+    /* GROUP */
+
+    public T group(String column) {
+        this.group = "GROUP by " + checkSafe(column);
+        return (T) this;
+    }
+
+    /* JOIN */
+
+    public T join(String table, String firstKey, String secondKey) {
+        return join(SQLJoin.LEFT, table, firstKey, secondKey);
+    }
+
+    public T join(SQLJoin join, String table, String firstKey, String secondKey) {
+        this.join.add(join.name() + " JOIN " + checkSafe(table) + " ON "
+                + checkSafe(this.table) + "." + checkSafe(firstKey) + " = "
+                + checkSafe(table) + "." + checkSafe(secondKey));
         return (T) this;
     }
 

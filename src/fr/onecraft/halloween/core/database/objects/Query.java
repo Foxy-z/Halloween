@@ -1,21 +1,18 @@
 package fr.onecraft.halloween.core.database.objects;
 
 import fr.onecraft.halloween.core.database.enums.SQLCondition;
-import fr.onecraft.halloween.core.database.enums.SQLJoin;
-import fr.onecraft.halloween.core.database.enums.SQLOrder;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseConnectionException;
 import fr.onecraft.halloween.core.database.exceptions.DatabaseQueryException;
 import fr.onecraft.halloween.utils.StringUtils;
 import org.bukkit.Bukkit;
 
-import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class Query extends BaseQuery<Query> {
     private final Connection connection;
@@ -31,13 +28,6 @@ public class Query extends BaseQuery<Query> {
 
         this.connection = connection;
         this.paramIndex = 0;
-    }
-
-    /* FROM */
-
-    public Query from(String table) {
-        this.table = checkSafe(table);
-        return this;
     }
 
     /* INSERT */
@@ -62,101 +52,23 @@ public class Query extends BaseQuery<Query> {
 
     /* WHERE */
 
-    public Query where(String key, int value) {
-        return where(SQLCondition.EQUALS, key, String.valueOf(value));
-    }
-
-    public Query where(String key, String value) {
-        return where(SQLCondition.EQUALS, key, value);
-    }
-
     public Query where(String key, SubQuery subQuery) throws DatabaseQueryException {
         return where(SQLCondition.EQUALS, key, subQuery);
     }
 
-    public Query where(SQLCondition condition, String key, int value) {
-        return where(condition, key, String.valueOf(value));
-    }
-
-    public Query where(SQLCondition condition, String key, String value) {
-        this.where.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
-        return this;
-    }
-
     public Query where(SQLCondition condition, String key, SubQuery subQuery) throws DatabaseQueryException {
-        this.where.add(checkSafe(key) + " " + condition.getOperator() + " (" + subQuery.build() + ")");
+        this.where.add(checkSafe(key) + " " + condition.getOperator() + " (" + processSubQuery(subQuery) + ")");
         return this;
     }
 
     /* HAVING */
 
-    public Query having(String key, int value) {
-        return having(SQLCondition.EQUALS, key, String.valueOf(value));
-    }
-
-    public Query having(String key, String value) {
-        return having(SQLCondition.EQUALS, key, value);
-    }
-
     public Query having(String key, SubQuery subQuery) throws DatabaseQueryException {
         return having(SQLCondition.EQUALS, key, subQuery);
     }
 
-    public Query having(SQLCondition condition, String key, int value) {
-        return having(condition, key, String.valueOf(value));
-    }
-
-    public Query having(SQLCondition condition, String key, String value) {
-        this.having.add(checkSafe(key) + " " + condition.getOperator() + " " + bindParam(value));
-        return this;
-    }
-
     public Query having(SQLCondition condition, String key, SubQuery subQuery) throws DatabaseQueryException {
-        this.having.add(checkSafe(key) + " " + condition.getOperator() + " (" + subQuery.build() + ")");
-        return this;
-    }
-
-    /* ORDER */
-
-    public Query order(SQLOrder order, String... tables) {
-        Arrays.stream(tables).forEach(this::checkSafe);
-        this.order = "ORDER BY " + StringUtils.join(", ", Arrays.asList(tables)) + " " + order.name();
-        return this;
-    }
-
-    /* LIMIT */
-
-    public Query limit(int limit) {
-        if (limit < 0) throw new InvalidParameterException("Limit must be a positive number");
-
-        this.limit = "LIMIT " + limit;
-        return this;
-    }
-
-    public Query limit(int limit, int offset) {
-        if (limit < 0 || offset < 0) throw new InvalidParameterException("Limit and offset must be positive numbers");
-
-        this.limit = "LIMIT " + offset + ", " + limit;
-        return this;
-    }
-
-    /* GROUP */
-
-    public Query group(String column) {
-        this.group = "GROUP by " + checkSafe(column);
-        return this;
-    }
-
-    /* JOIN */
-
-    public Query join(String table, String firstKey, String secondKey) {
-        return join(SQLJoin.LEFT, table, firstKey, secondKey);
-    }
-
-    public Query join(SQLJoin join, String table, String firstKey, String secondKey) {
-        this.join.add(join.name() + " JOIN " + checkSafe(table) + " ON "
-                + checkSafe(this.table) + "." + checkSafe(firstKey) + " = "
-                + checkSafe(table) + "." + checkSafe(secondKey));
+        this.having.add(checkSafe(key) + " " + condition.getOperator() + " (" + processSubQuery(subQuery) + ")");
         return this;
     }
 
@@ -176,6 +88,22 @@ public class Query extends BaseQuery<Query> {
     public Query updatable() {
         this.updatable = true;
         return this;
+    }
+
+    /* UTILS */
+
+    private String processSubQuery(SubQuery subQuery) throws DatabaseQueryException {
+        String subQueryStr = subQuery.makeQuery();
+
+        Map<String, String> subQueryArgs = subQuery.getArguments();
+        for (String key : subQueryArgs.keySet()) {
+            String subKey = "subQuery" + this.paramIndex + "_" + key.substring(1);
+            this.args.put(subKey, subQueryArgs.get(key));
+
+            subQueryStr.replace(key, subKey);
+        }
+
+        return subQueryStr;
     }
 
     /* EXECUTE */
