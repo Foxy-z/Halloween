@@ -219,6 +219,9 @@ abstract class BaseQuery<T extends BaseQuery> {
             // bind update
             parts.add("UPDATE");
 
+            // bind table
+            parts.add(this.table);
+
             // bind update
             parts.add("SET");
             parts.add(StringUtils.join(", ", this.update));
