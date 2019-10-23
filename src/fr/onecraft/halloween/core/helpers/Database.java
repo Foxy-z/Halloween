@@ -81,10 +81,10 @@ public class Database {
             // add found candies
             Set<Integer> foundCandies = new HashSet<>();
             while (candyResult.next()) {
-                foundCandies.add(userResult.getInt("candy_id"));
+                foundCandies.add(candyResult.getInt("candy_id"));
             }
 
-            return new PlayerUser(
+            PlayerUser user = new PlayerUser(
                     userId,
                     uuid,
                     userResult.getString("name"),
@@ -93,6 +93,9 @@ public class Database {
                     userResult.getLong(WINNERS + ".won_at"),
                     foundCandies
             );
+
+            updateName(user);
+            return user;
         } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
             e.printStackTrace();
         }
@@ -100,7 +103,7 @@ public class Database {
         return null;
     }
 
-    private void updateName(PlayerUser user) {
+    private static void updateName(PlayerUser user) {
         OfflinePlayer player = Bukkit.getOfflinePlayer(user.getUuid());
         // cancel if name is up to date
         if (player.getName().equals(user.getName())) return;
@@ -111,6 +114,7 @@ public class Database {
             new Query(DatabaseManager.getConnection())
                     .from(USERS)
                     .update("name", player.getName())
+                    .where("uuid", user.getUuid().toString())
                     .execute();
 
         } catch (DatabaseConnectionException | SQLException | DatabaseQueryException e) {
@@ -329,7 +333,7 @@ public class Database {
             Query query = new Query(DatabaseManager.getConnection());
 
             query = query.from(FOUND)
-                    .select("user_id", "uuid", "count(*)")
+                    .select("name", "user_id", "uuid", "count(*)")
                     .group("user_id")
                     .having(
                             SQLCondition.NON_EQUALS,
@@ -355,7 +359,7 @@ public class Database {
             // add each winner
             while (resultSet.next()) {
                 users.add(new LeaderboardUser(
-                        resultSet.getInt("id"),
+                        resultSet.getInt("user_id"),
                         UUID.fromString(resultSet.getString("uuid")),
                         resultSet.getString("name"),
                         -1,
