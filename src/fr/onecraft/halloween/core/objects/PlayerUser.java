@@ -8,38 +8,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class User {
-    private int id;
-    private String name;
-    private UUID uuid;
-    private int placement;
-    private long winAt;
+public class PlayerUser extends LeaderboardUser {
+
     private Set<Integer> foundCandies;
 
-    private static Map<UUID, User> USERS = new HashMap<>();
+    private static Map<UUID, PlayerUser> USERS = new HashMap<>();
 
-    public User(int id, UUID uuid, int placement, long winAt, Set<Integer> foundCandies) {
-        this.id = id;
-        this.name = Bukkit.getOfflinePlayer(uuid).getName();
-        this.uuid = uuid;
-        this.placement = placement;
-        this.winAt = winAt;
+    public PlayerUser(int id, UUID uuid, String name, int placement, int foundCount, long winAt, Set<Integer> foundCandies) {
+        super(id, uuid, name, placement, foundCount, winAt);
         this.foundCandies = foundCandies;
     }
 
-    public int getId() {
-        return this.id;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public UUID getUuid() {
-        return this.uuid;
-    }
-
-    public static User fromUuid(UUID uuid) {
+    public static PlayerUser fromUuid(UUID uuid) {
         return USERS.get(uuid);
     }
 
@@ -64,22 +44,6 @@ public class User {
                 .filter(candy -> candy.getServerName().equals(Bukkit.getServerName()))
                 .filter(candy -> !foundCandies.contains(candy.getId()))
                 .count();
-    }
-
-    public int getPlacement() {
-        return placement;
-    }
-
-    public void setPlacement(int placement) {
-        this.placement = placement;
-    }
-
-    public long getWinAt() {
-        return winAt;
-    }
-
-    public void setWinAt(long winAt) {
-        this.winAt = winAt;
     }
 
     public boolean hasFound(int candy) {

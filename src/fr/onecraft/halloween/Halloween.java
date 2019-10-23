@@ -6,7 +6,7 @@ import fr.onecraft.halloween.core.database.exceptions.DatabaseConfigurationExcep
 import fr.onecraft.halloween.core.database.helpers.DatabaseConfig;
 import fr.onecraft.halloween.core.objects.Candy;
 import fr.onecraft.halloween.core.objects.CandyItem;
-import fr.onecraft.halloween.core.objects.User;
+import fr.onecraft.halloween.core.objects.PlayerUser;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -46,7 +46,7 @@ public class Halloween extends JavaPlugin {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             CandyItem.loadTextures();
             Candy.loadLocations();
-            Bukkit.getOnlinePlayers().stream().map(Entity::getUniqueId).forEach(User::loadUser);
+            Bukkit.getOnlinePlayers().stream().map(Entity::getUniqueId).forEach(PlayerUser::loadUser);
         });
 
         // register events and commands

@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Query extends BaseQuery {
+public class Query extends BaseQuery<Query> {
     private final Connection connection;
 
     public Query(Connection connection) throws DatabaseConnectionException {
@@ -37,19 +37,6 @@ public class Query extends BaseQuery {
 
     public Query from(String table) {
         this.table = checkSafe(table);
-        return this;
-    }
-
-    /* SELECT */
-
-    public Query select() {
-        this.select = "SELECT * FROM";
-        return this;
-    }
-
-    public Query select(String... items) {
-        Arrays.stream(items).forEach(this::checkSafe);
-        this.select = "SELECT " + StringUtils.join(", ", Arrays.asList(items)) + " FROM";
         return this;
     }
 
@@ -173,20 +160,22 @@ public class Query extends BaseQuery {
         return this;
     }
 
+    /* UPDATE */
+
+    public Query update(String key, int value) {
+        return update(key, String.valueOf(value));
+    }
+
+    public Query update(String key, String value) {
+        this.update.add(checkSafe(key) + " = " + bindParam(value));
+        return this;
+    }
+
     /* UPDATABLE */
 
     public Query updatable() {
         this.updatable = true;
         return this;
-    }
-
-    /* UTILS */
-
-    protected String bindParam(String param) {
-        String key = ":param" + paramIndex;
-        args.put(key, param);
-        paramIndex++;
-        return key;
     }
 
     /* EXECUTE */
@@ -209,8 +198,8 @@ public class Query extends BaseQuery {
             }
 
             // replace arguments
-            for (String arg : args.keySet()) {
-                statement.bind(arg, args.get(arg));
+            for (String arg : this.args.keySet()) {
+                statement.bind(arg, this.args.get(arg));
             }
 
             // if query has result

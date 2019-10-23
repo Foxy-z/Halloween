@@ -4,7 +4,7 @@ import fr.onecraft.halloween.Halloween;
 import fr.onecraft.halloween.core.helpers.Database;
 import fr.onecraft.halloween.core.objects.Candy;
 import fr.onecraft.halloween.core.objects.CandyItem;
-import fr.onecraft.halloween.core.objects.User;
+import fr.onecraft.halloween.core.objects.PlayerUser;
 import fr.onecraft.halloween.utils.SkullUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -85,13 +85,13 @@ public class CmdHalloween implements CommandExecutor {
 
     private void info(Player player, String[] args) {
         if (args.length == 1 || !player.hasPermission(pluginName + ".info.other")) {
-            User target = User.fromUuid(player.getUniqueId());
+            PlayerUser target = PlayerUser.fromUuid(player.getUniqueId());
             infoOf(player, target);
         } else {
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(args[1]);
 
-                User targetUser = User.fromUuid(targetPlayer.getUniqueId());
+                PlayerUser targetUser = PlayerUser.fromUuid(targetPlayer.getUniqueId());
                 if (targetUser == null) {
                     targetUser = Database.getUser(targetPlayer.getUniqueId());
                 }
@@ -106,7 +106,7 @@ public class CmdHalloween implements CommandExecutor {
         }
     }
 
-    private void infoOf(Player player, User target) {
+    private void infoOf(Player player, PlayerUser target) {
         String suffix = player.getUniqueId() != target.getUuid() ? " pour §a" + target.getName() + "§7 :" : "";
         int p = target.getPlacement();
         String placement = p < 1 ? "non classé" : p == 1 ? "§61er" : p < 4 ? "§e" + p + "ème" : "§f" + p + "ème";
@@ -140,7 +140,7 @@ public class CmdHalloween implements CommandExecutor {
                     return;
                 }
             }
-            List<User> users;
+            List<PlayerUser> users;
             if (progress) {
                 users = Database.getProgressRanking(amount);
             } else {
@@ -156,7 +156,7 @@ public class CmdHalloween implements CommandExecutor {
             String color = "§6";
             StringBuilder message = new StringBuilder(Halloween.PREFIX + (progress ? "Avancée" : "Classement") + " des joueurs : ");
             for (int i = 0; i < users.size(); i++) {
-                User user = users.get(i);
+                PlayerUser user = users.get(i);
                 // add player name
                 message.append("\n")
                         .append("§7 - ")
@@ -171,7 +171,7 @@ public class CmdHalloween implements CommandExecutor {
                             .append("§7 bonbons");
                 } else {
                     String time = new SimpleDateFormat("MM/dd à HH:mm")
-                            .format(new Date(user.getWinAt()));
+                            .format(new Date(user.getWonAt()));
 
                     message.append("le ").append(time);
                 }

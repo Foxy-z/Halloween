@@ -9,9 +9,11 @@ import fr.onecraft.halloween.core.database.objects.Query;
 import fr.onecraft.halloween.core.database.objects.SubQuery;
 import fr.onecraft.halloween.core.objects.Candy;
 import fr.onecraft.halloween.core.objects.CandyItem;
-import fr.onecraft.halloween.core.objects.User;
+import fr.onecraft.halloween.core.objects.LeaderboardUser;
+import fr.onecraft.halloween.core.objects.PlayerUser;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,45 +32,90 @@ public class Database {
      * @param uuid UUID of the player
      * @return User object with player data
      */
-    public static User getUser(UUID uuid) {
+    public static PlayerUser getUser(UUID uuid) {
         try {
-            ResultSet resultSet = new Query(DatabaseManager.getConnection())
+            // get user from database
+            ResultSet userResult = new Query(DatabaseManager.getConnection())
                     .from(USERS)
                     .select()
                     .where("uuid", uuid.toString())
-                    .join(FOUND, "id", "user_id")
                     .join(WINNERS, "id", "user_id")
                     .execute();
 
             // if user not registered in database create it
-            if (!resultSet.next()) {
+            if (!userResult.next()) {
+                // get target name
+                String name = "?";
+                OfflinePlayer target = Bukkit.getOfflinePlayer(uuid);
+                if (target.isOnline() || !target.getName().isEmpty()) {
+                    name = target.getName();
+                }
+
+                // insert into database
                 int row = new Query(DatabaseManager.getConnection())
                         .from(USERS)
                         .insert("uuid", uuid.toString())
+                        .insert("name", name)
                         .getRow();
-                return new User(row, uuid, -1, -1, new HashSet<>());
+
+                return new PlayerUser(
+                        row,
+                        uuid,
+                        name,
+                        -1,
+                        0,
+                        -1,
+                        new HashSet<>()
+                );
             }
 
-            User user = new User(
-                    resultSet.getInt("id"),
-                    uuid,
-                    resultSet.getInt(WINNERS + ".id"),
-                    resultSet.getLong(WINNERS + ".won_at"),
-                    new HashSet<>()
-            );
+            int userId = userResult.getInt("id");
 
-            resultSet.previous();
+            // get found candies
+            ResultSet candyResult = new Query(DatabaseManager.getConnection())
+                    .from(FOUND)
+                    .select("candy_id")
+                    .where("user_id", userId)
+                    .execute();
+
             // add found candies
-            while (resultSet.next()) {
-                if (resultSet.getInt("candy_id") == 0) continue;
-                user.getFoundCandies().add(resultSet.getInt("candy_id"));
+            Set<Integer> foundCandies = new HashSet<>();
+            while (candyResult.next()) {
+                foundCandies.add(userResult.getInt("candy_id"));
             }
-            return user;
+
+            return new PlayerUser(
+                    userId,
+                    uuid,
+                    userResult.getString("name"),
+                    userResult.getInt(WINNERS + ".id"),
+                    foundCandies.size(),
+                    userResult.getLong(WINNERS + ".won_at"),
+                    foundCandies
+            );
         } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
             e.printStackTrace();
         }
 
         return null;
+    }
+
+    private void updateName(PlayerUser user) {
+        OfflinePlayer player = Bukkit.getOfflinePlayer(user.getUuid());
+        // cancel if name is up to date
+        if (player.getName().equals(user.getName())) return;
+        user.setName(player.getName());
+
+        try {
+            // update to database
+            new Query(DatabaseManager.getConnection())
+                    .from(USERS)
+                    .update("name", player.getName())
+                    .execute();
+
+        } catch (DatabaseConnectionException | SQLException | DatabaseQueryException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -240,7 +287,7 @@ public class Database {
      * @param amount int of player to returns
      * @return List
      */
-    public static List<User> getWinners(int amount) {
+    public static List<LeaderboardUser> getWinners(int amount) {
         try {
             ResultSet resultSet = new Query(DatabaseManager.getConnection())
                     .from(WINNERS)
@@ -255,17 +302,17 @@ public class Database {
             }
 
             resultSet.previous();
-            List<User> users = new ArrayList<>();
-            Set<Integer> candies = getLocations().keySet();
+            List<LeaderboardUser> users = new ArrayList<>();
 
             // add each winner
             while (resultSet.next()) {
-                users.add(new User(
+                users.add(new LeaderboardUser(
                         resultSet.getInt("user_id"),
                         UUID.fromString(resultSet.getString("uuid")),
+                        resultSet.getString("name"),
                         resultSet.getInt(WINNERS + ".id"),
-                        resultSet.getLong(WINNERS + ".won_at"),
-                        candies
+                        -1, // TODO MAX
+                        resultSet.getLong(WINNERS + ".won_at")
                 ));
             }
             return users;
@@ -276,16 +323,18 @@ public class Database {
         return null;
     }
 
-    public static List<User> getProgressRanking(int amount) {
+    public static List<LeaderboardUser> getProgressRanking(int amount) {
         try {
+            // TODO UPDATE
             Query query = new Query(DatabaseManager.getConnection());
+
             query = query.from(FOUND)
                     .select("user_id", "uuid", "count(*)")
                     .group("user_id")
                     .having(
                             SQLCondition.NON_EQUALS,
                             "count(*)",
-                            new SubQuery(query)
+                            new SubQuery(query) // TODO indépendant de query
                                     .from(LOCATIONS)
                                     .select("count(*)")
                     )
@@ -301,11 +350,18 @@ public class Database {
             }
 
             resultSet.previous();
-            List<User> users = new ArrayList<>();
+            List<LeaderboardUser> users = new ArrayList<>();
 
             // add each winner
             while (resultSet.next()) {
-                users.add(getUser(UUID.fromString(resultSet.getString("uuid"))));
+                users.add(new LeaderboardUser(
+                        resultSet.getInt("id"),
+                        UUID.fromString(resultSet.getString("uuid")),
+                        resultSet.getString("name"),
+                        -1,
+                        resultSet.getInt("count(*)"), // TODO alias found
+                        -1
+                ));
             }
             return users;
         } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {

@@ -3,7 +3,7 @@ package fr.onecraft.halloween.listeners;
 import fr.onecraft.halloween.Halloween;
 import fr.onecraft.halloween.core.helpers.Database;
 import fr.onecraft.halloween.core.objects.Candy;
-import fr.onecraft.halloween.core.objects.User;
+import fr.onecraft.halloween.core.objects.PlayerUser;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -31,7 +31,7 @@ public class PlayerListeners implements Listener {
                 && !event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
 
         Player player = event.getPlayer();
-        User user = User.fromUuid(player.getUniqueId());
+        PlayerUser user = PlayerUser.fromUuid(player.getUniqueId());
         if (user == null) return;
 
         Block clicked = event.getClickedBlock();
@@ -61,7 +61,7 @@ public class PlayerListeners implements Listener {
                     // get placement
                     int placement = Database.addWinner(user.getId());
                     user.setPlacement(placement);
-                    user.setWinAt(System.currentTimeMillis());
+                    user.setWonAt(System.currentTimeMillis());
                     player.sendMessage(Halloween.PREFIX + "Mais... Vous avez trouvé toutes les friandises, félicitations ! " +
                             "Vous avez arrivé §a" + placement + (placement == 1 ? "er" : "ème") + " §7de l'événement !");
                 });
@@ -84,11 +84,11 @@ public class PlayerListeners implements Listener {
 
     @EventHandler
     public void on(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> User.loadUser(event.getPlayer().getUniqueId()));
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> PlayerUser.loadUser(event.getPlayer().getUniqueId()));
     }
 
     @EventHandler
     public void on(PlayerQuitEvent event) {
-        User.removeUserCache(event.getPlayer().getUniqueId());
+        PlayerUser.removeUserCache(event.getPlayer().getUniqueId());
     }
 }

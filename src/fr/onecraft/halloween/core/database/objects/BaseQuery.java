@@ -7,7 +7,7 @@ import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-abstract class BaseQuery {
+abstract class BaseQuery<T extends BaseQuery> {
     int paramIndex;
     String table;
     String select;
@@ -21,8 +21,31 @@ abstract class BaseQuery {
     final List<String> where = new ArrayList<>();
     final List<String> having = new ArrayList<>();
     final List<String> join = new ArrayList<>();
+    final List<String> update = new ArrayList<>();
     final Map<String, String> insert = new LinkedHashMap<>();
     final Map<String, String> args = new HashMap<>();
+
+    /* SELECT */
+
+    public T select() {
+        this.select = "SELECT * FROM";
+        return (T) this;
+    }
+
+    public T select(String... items) {
+        Arrays.stream(items).forEach(this::checkSafe);
+        this.select = "SELECT " + StringUtils.join(", ", Arrays.asList(items)) + " FROM";
+        return (T) this;
+    }
+
+    /* UTILS */
+
+    String bindParam(String param) {
+        String key = ":param" + paramIndex;
+        args.put(key, param);
+        paramIndex++;
+        return key;
+    }
 
     String checkSafe(String param) {
         if (!param.matches("[a-zA-Z_.]+") && !param.matches("count\\([a-zA-Z*_]+\\)")) {
@@ -99,6 +122,19 @@ abstract class BaseQuery {
             if (this.insertOrUpdate) {
                 parts.add("ON DUPLICATE KEY UPDATE");
                 parts.add(StringUtils.join(", ", " = ", insert));
+            }
+        } else if (!this.update.isEmpty()) {
+            // bind update
+            parts.add("UPDATE");
+
+            // bind update
+            parts.add("SET");
+            parts.add(StringUtils.join(", ", this.update));
+
+            // bind where
+            if (!this.where.isEmpty()) {
+                parts.add("WHERE");
+                parts.add("(" + StringUtils.join(") AND (", this.where) + ")");
             }
         } else {
             throw new DatabaseQueryException("You must use insert, select or delete into your query");

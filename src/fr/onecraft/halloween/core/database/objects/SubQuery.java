@@ -24,7 +24,7 @@ public class SubQuery extends BaseQuery {
         return this;
     }
 
-    public SubQuery select() {
+    public BaseQuery select() {
         this.select = "SELECT * FROM";
         return this;
     }
