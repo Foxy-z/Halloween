@@ -330,9 +330,8 @@ public class Database {
     public static List<LeaderboardUser> getProgressRanking(int amount) {
         try {
             // TODO UPDATE
-            Query query = new Query(DatabaseManager.getConnection());
-
-            query = query.from(FOUND)
+            ResultSet resultSet = new Query(DatabaseManager.getConnection())
+                    .from(FOUND)
                     .select("name", "user_id", "uuid", "count(*)")
                     .group("user_id")
                     .having(
@@ -344,9 +343,8 @@ public class Database {
                     )
                     .join(USERS, "user_id", "id")
                     .order(SQLOrder.DESC, "count(*)")
-                    .limit(amount);
-
-            ResultSet resultSet = query.execute();
+                    .limit(amount)
+                    .execute();
 
             // if there is no player
             if (!resultSet.next()) {
@@ -373,5 +371,56 @@ public class Database {
         }
 
         return null;
+    }
+
+    public static int getTotalPlayersCount() {
+        try {
+            ResultSet resultSet = new Query(DatabaseManager.getConnection())
+                    .from(USERS)
+                    .select("id")
+                    .execute();
+
+            resultSet.last();
+            return resultSet.getRow();
+        } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    public static int getTotalParticipantCount() {
+        try {
+            ResultSet resultSet = new Query(DatabaseManager.getConnection())
+                    .from(FOUND)
+                    .select("user_id")
+                    .group("user_id")
+                    .having(SQLCondition.NON_EQUALS, "count(*)", 0)
+                    .join(USERS, "user_id", "id")
+                    .execute();
+
+            resultSet.last();
+            return resultSet.getRow();
+        } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    public static int getFoundCandiesCount() {
+        try {
+            ResultSet resultSet = new Query(DatabaseManager.getConnection())
+                    .from(FOUND)
+                    .select("id")
+                    .execute();
+
+            resultSet.last();
+            return resultSet.getRow();
+        } catch (SQLException | DatabaseQueryException | DatabaseConnectionException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 }

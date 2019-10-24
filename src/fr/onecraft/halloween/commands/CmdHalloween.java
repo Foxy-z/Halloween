@@ -54,6 +54,8 @@ public class CmdHalloween implements CommandExecutor {
             remove(player);
         } else if (action.equals("placing")) {
             placing(player, args);
+        } else if (action.equals("stats")) {
+            stats(player);
         } else if (action.equals("clearall")) {
             clearAll(player);
         } else if (action.equals("dbreload")) {
@@ -194,16 +196,19 @@ public class CmdHalloween implements CommandExecutor {
      * -
      * /ha stats [server]
      */
-    private void stats(Player player, String[] args) {
+    private void stats(Player player) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            int totalPlayerCount = Database.getTotalPlayersCount();
+            int participantCount = Database.getTotalParticipantCount();
+            int foundCount = Database.getFoundCandiesCount();
+            int foundAverage = Math.round(foundCount / participantCount);
+
             player.sendMessage(Halloween.PREFIX + "Statistiques de l'événement : "
-                    + "\n §7- Nombre de bonbons à trouver : §a"
-                    + "\n §7- Nombre de joueurs uniques : §a"
-                    + "\n §7- Nombre de participants : §a"
-                    + "\n §7- Nombre de bonbons trouvés : §a"
-                    + "\n §7- Pourcentage moyen de bonbons trouvés par participant : §a"
-                    + "\n §7- Pourcentage de participants ayant tout trouvé : §a"
-                    + "\n §7- Temps moyen pour tout trouver : §a"
+                    + "\n §7- Nombre de bonbons à trouver : §a" + Candy.getAll().size()
+                    + "\n §7- Nombre de bonbons trouvés : §a" + foundCount
+                    + "\n §7- Nombre de joueurs uniques : §a" + totalPlayerCount
+                    + "\n §7- Nombre de participants : §a" + participantCount
+                    + "\n §7- Moyenne de bonbons trouvés par participant : §a" + foundAverage + "%"
 
             );
         });
