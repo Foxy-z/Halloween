@@ -18,10 +18,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class CmdHalloween implements CommandExecutor {
     private Halloween plugin;
@@ -114,14 +111,33 @@ public class CmdHalloween implements CommandExecutor {
         int p = target.getPlacement();
         String placement = p < 1 ? "non classé" : p == 1 ? "§61er" : p < 4 ? "§e" + p + "ème" : "§f" + p + "ème";
 
+        Map<String, Integer> totalPerServer = Candy.getTotalPerServer();
+        Map<String, Integer> foundPerServer = Candy.getFoundPerServer(target.getFoundCandies());
+
+        // build candy per server
+        StringBuilder perServerStr = new StringBuilder();
+        for (String server : totalPerServer.keySet()) {
+            int total = totalPerServer.get(server);
+            int found = foundPerServer.get(server);
+
+            perServerStr
+                    .append("\n  §7– §f")
+                    .append(server)
+                    .append("§7: ")
+                    .append(total == found ? "§6" : "§f")
+                    .append(found)
+                    .append("§7/§6")
+                    .append(total);
+        }
+
         player.sendMessage(Halloween.PREFIX + "Information de l'événement Halloween" + suffix
                 + "\n§7 - Placement : " + placement
                 + "\n§7 - Bonbons trouvés : §f" + target.getFoundCandies().size()
+                + "\n§7 - Bonbons trouvés par serveur : "
+                + perServerStr
         );
     }
 
-    // TODO ajouter classement temporaire (joueur la plus avancé, avec x bonbons)
-    // /halloween placing <amount> [type : winners / progress]
     private void placing(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(Halloween.INSTANCE, () -> {
             boolean progress = false;

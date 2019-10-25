@@ -11,6 +11,7 @@ import org.bukkit.inventory.meta.FireworkMeta;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Candy {
     private int id;
@@ -83,6 +84,35 @@ public class Candy {
 
     public static Collection<Candy> getAll() {
         return LOCATIONS.values();
+    }
+
+    public static Map<String, Integer> getTotalPerServer() {
+        Map<String, Integer> result = new HashMap<>();
+        for (Candy candy : LOCATIONS.values()) {
+            String server = candy.getServerName();
+            if (!result.containsKey(server)) {
+                result.put(server, 1);
+            } else {
+                result.put(server, result.get(server) + 1);
+            }
+        }
+
+        return result;
+    }
+
+    public static Map<String, Integer> getFoundPerServer(Set<Integer> found) {
+        Map<String, Integer> result = new HashMap<>();
+        for (Candy candy : LOCATIONS.values()) {
+            String server = candy.getServerName();
+            if (!result.containsKey(server)) {
+                result.put(server, 0);
+            }
+
+            if (!found.contains(candy.getId())) continue;
+            result.put(server, result.get(server) + 1);
+        }
+
+        return result;
     }
 
     public static void add(Halloween plugin, Player player, Location location, CandyItem type) {
