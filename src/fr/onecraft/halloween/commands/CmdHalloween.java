@@ -189,7 +189,7 @@ public class CmdHalloween implements CommandExecutor {
                             .append(user.getFoundCount())
                             .append("§7 bonbons");
                 } else {
-                    String time = new SimpleDateFormat("MM/dd à HH:mm")
+                    String time = new SimpleDateFormat("dd/MM à HH:mm")
                             .format(new Date(user.getWonAt()));
 
                     message.append("le ").append(time);
